@@ -1,0 +1,75 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: metalmachines.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: MetalMachine
+    listKind: MetalMachineList
+    plural: metalmachines
+    singular: metalmachine
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: MetalMachine is the Schema for the metalmachines API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: MetalMachineSpec defines the desired state of MetalMachine
+          properties:
+            bmc:
+              description: BMC defines data about how to talk to the node via ipmitool
+              properties:
+                endpoint:
+                  type: string
+                pass:
+                  type: string
+                user:
+                  type: string
+              required:
+              - endpoint
+              - pass
+              - user
+              type: object
+          type: object
+        status:
+          description: MetalMachineStatus defines the observed state of MetalMachine
+          properties:
+            ready:
+              type: boolean
+          required:
+          - ready
+          type: object
+      type: object
+  version: v1alpha2
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

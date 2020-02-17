@@ -1,4 +1,4 @@
-# project-template-kubernetes-controller
+# cluster-api-provider-metal
 
 Initializing a new project.
 

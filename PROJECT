@@ -1,0 +1,13 @@
+domain: cluster.x-k8s.io
+repo: github.com/talos-systems/cluster-api-provider-metal
+resources:
+- group: infrastructure
+  kind: MetalCluster
+  version: v1alpha2
+- group: infrastructure
+  kind: MetalMachine
+  version: v1alpha2
+- group: infrastructure
+  kind: MetalMachineTemplate
+  version: v1alpha2
+version: "2"
