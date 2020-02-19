@@ -4,7 +4,7 @@ SHA ?= $(shell git describe --match=none --always --abbrev=8 --dirty)
 TAG ?= $(shell git describe --tag --always --dirty)
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 REGISTRY_AND_USERNAME := $(REGISTRY)/$(USERNAME)
-NAME := template-controller-manager
+NAME := cluster-api-metal-controller
 
 ARTIFACTS := _out
 
@@ -42,7 +42,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: $(NAMESPACE)
 commonLabels:
-  app: template-controller-manager
+  app: cluster-api-metal-controller
 bases:
   - crd
   - rbac
@@ -68,6 +68,7 @@ generate: ## Generate source code.
 .PHONY: container
 container: generate ## Build the container image.
 	@$(MAKE) docker-$@ TARGET_ARGS="--push=$(PUSH)"
+	sed -i'' -e 's@image: .*@image: '"$(REGISTRY_AND_USERNAME)/$(NAME):$(TAG)"'@' ./config/default/manager_image_patch.yaml
 
 .PHONY: manifests
 manifests: ## Generate manifests (e.g. CRD, RBAC, etc.).

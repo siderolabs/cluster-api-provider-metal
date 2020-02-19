@@ -17,7 +17,7 @@ RUN ! go mod tidy -v 2>&1 | grep .
 
 FROM build AS manifests-build
 ARG NAME
-RUN controller-gen rbac:roleName=${NAME}-role crd paths="./..." output:rbac:artifacts:config=config/rbac output:crd:artifacts:config=config/crd/bases
+RUN controller-gen rbac:roleName=manager-role crd paths="./..." output:rbac:artifacts:config=config/rbac output:crd:artifacts:config=config/crd/bases
 FROM scratch AS manifests
 COPY --from=manifests-build /src/config/crd /config/crd
 COPY --from=manifests-build /src/config/rbac /config/rbac
@@ -48,8 +48,12 @@ FROM build AS binary
 RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /manager
 RUN chmod +x /manager
 
+## TODO(rsmitty): make bmc pkg and move to autonomy image
 FROM scratch AS container
 COPY --from=docker.io/autonomy/ca-certificates:v0.1.0 / /
 COPY --from=docker.io/autonomy/fhs:v0.1.0 / /
+COPY --from=docker.io/autonomy/musl:ffdacf0 / /
+COPY --from=docker.io/autonomy/libressl:ffdacf0 / /
+COPY --from=docker.io/autonomy/ipmitool:ffdacf0 / /
 COPY --from=binary /manager /manager
 ENTRYPOINT [ "/manager" ]
