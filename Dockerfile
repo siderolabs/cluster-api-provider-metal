@@ -40,7 +40,7 @@ ARG TAG
 RUN cd config/manager \
   && kustomize edit set image controller=${REGISTRY_AND_USERNAME}/${NAME}:${TAG} \
   && cd - \
-  && kubectl kustomize config >/release.yaml
+  && kubectl kustomize config/default >/release.yaml
 FROM scratch AS release
 COPY --from=release-build /release.yaml /release.yaml
 
@@ -50,8 +50,8 @@ RUN chmod +x /manager
 
 ## TODO(rsmitty): make bmc pkg and move to autonomy image
 FROM scratch AS container
-COPY --from=docker.io/autonomy/ca-certificates:v0.1.0 / /
-COPY --from=docker.io/autonomy/fhs:v0.1.0 / /
+COPY --from=docker.io/autonomy/ca-certificates:ffdacf0 / /
+COPY --from=docker.io/autonomy/fhs:ffdacf0 / /
 COPY --from=docker.io/autonomy/musl:ffdacf0 / /
 COPY --from=docker.io/autonomy/libressl:ffdacf0 / /
 COPY --from=docker.io/autonomy/ipmitool:ffdacf0 / /
