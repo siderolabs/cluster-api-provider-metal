@@ -5,6 +5,7 @@
 package v1alpha2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,7 +25,8 @@ type BMC struct {
 
 // MetalMachineSpec defines the desired state of MetalMachine
 type MetalMachineSpec struct {
-	BMC BMC `json:"bmc,omitempty"`
+	BMC       BMC                     `json:"bmc,omitempty"`
+	ServerRef *corev1.ObjectReference `json:"serverRef,omitempty"`
 }
 
 // MetalMachineStatus defines the observed state of MetalMachine
