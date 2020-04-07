@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -112,6 +113,9 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// Set the providerID, as its required in upstream capi for machine lifecycle
+	metalMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("metal://%s", metalMachine.Spec.ServerRef.Name))
 
 	metalMachine.Status.Ready = true
 	return ctrl.Result{}, nil

@@ -25,6 +25,10 @@ type BMC struct {
 
 // MetalMachineSpec defines the desired state of MetalMachine
 type MetalMachineSpec struct {
+	// ProviderID is the unique identifier as specified by the cloud provider.
+	// +optional
+	ProviderID *string `json:"providerID,omitempty"`
+
 	BMC       BMC                     `json:"bmc,omitempty"`
 	ServerRef *corev1.ObjectReference `json:"serverRef,omitempty"`
 }
