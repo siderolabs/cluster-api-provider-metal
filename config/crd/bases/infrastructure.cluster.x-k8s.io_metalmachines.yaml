@@ -52,6 +52,10 @@ spec:
               - pass
               - user
               type: object
+            providerID:
+              description: ProviderID is the unique identifier as specified by the
+                cloud provider.
+              type: string
             serverRef:
               description: ObjectReference contains enough information to let you
                 inspect or modify the referred object.
