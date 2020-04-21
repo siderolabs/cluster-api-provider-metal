@@ -40,9 +40,12 @@ ARG TAG
 RUN cd config/manager \
   && kustomize edit set image controller=${REGISTRY_AND_USERNAME}/${NAME}:${TAG} \
   && cd - \
-  && kubectl kustomize config/default >/release.yaml
+  && kubectl kustomize config/default >/infrastructure-components.yaml \
+  && cp config/metadata/metadata.yaml /metadata.yaml
+
 FROM scratch AS release
-COPY --from=release-build /release.yaml /release.yaml
+COPY --from=release-build /infrastructure-components.yaml /infrastructure-components.yaml
+COPY --from=release-build /metadata.yaml /metadata.yaml
 
 FROM build AS binary
 RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /manager
