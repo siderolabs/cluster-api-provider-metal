@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha2"
+	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	"github.com/talos-systems/cluster-api-provider-metal/internal/pkg/ipmi"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // MetalMachineReconciler reconciles a MetalMachine object
@@ -69,8 +70,8 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 		return ctrl.Result{}, fmt.Errorf("clusterInfra is not available yet")
 	}
 
-	if machine.Spec.Bootstrap.Data == nil {
-		return ctrl.Result{}, fmt.Errorf("bootstrapData is not available yet")
+	if machine.Spec.Bootstrap.DataSecretName == nil {
+		return ctrl.Result{}, fmt.Errorf("bootstrap secret is not available yet")
 	}
 
 	// Initialize the patch helper
@@ -88,10 +89,7 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 		}
 	}()
 
-	// If the metalMachine doesn't have our finalizer, add it.
-	if !util.Contains(metalMachine.Finalizers, infrav1.MachineFinalizer) {
-		metalMachine.Finalizers = append(metalMachine.Finalizers, infrav1.MachineFinalizer)
-	}
+	controllerutil.AddFinalizer(metalMachine, infrav1.MachineFinalizer)
 
 	// Handle deleted machines
 	if !metalMachine.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -140,7 +138,7 @@ func (r *MetalMachineReconciler) reconcileDelete(metalMachine *infrav1.MetalMach
 	}
 
 	// Cluster is deleted so remove the finalizer.
-	metalMachine.Finalizers = util.Filter(metalMachine.Finalizers, infrav1.MachineFinalizer)
+	controllerutil.RemoveFinalizer(metalMachine, infrav1.MachineFinalizer)
 
 	return ctrl.Result{}, nil
 }

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package v1alpha2
+package v1alpha3
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +28,7 @@ type MetalMachineTemplateStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=metalmachinetemplates,scope=Namespaced,categories=cluster-api
+// +kubebuilder:storageversion
 
 // MetalMachineTemplate is the Schema for the metalmachinetemplates API
 type MetalMachineTemplate struct {

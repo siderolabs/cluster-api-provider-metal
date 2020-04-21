@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -17,9 +18,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha2"
 )
 
 // MetalClusterReconciler reconciles a MetalCluster object
@@ -78,10 +78,8 @@ func (r *MetalClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 		}
 	}()
 
-	// If the metalCluster doesn't have our finalizer, add it.
-	if !util.Contains(metalCluster.Finalizers, infrav1.ClusterFinalizer) {
-		metalCluster.Finalizers = append(metalCluster.Finalizers, infrav1.ClusterFinalizer)
-	}
+	// If the MetalCluster doesn't have our finalizer, add it.
+	controllerutil.AddFinalizer(metalCluster, infrav1.ClusterFinalizer)
 
 	// Handle deleted machines
 	if !metalCluster.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -89,7 +87,6 @@ func (r *MetalClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 		return r.reconcileDelete(metalCluster)
 	}
 
-	metalCluster.Status.APIEndpoints = metalCluster.Spec.APIEndpoints
 	metalCluster.Status.Ready = true
 
 	return ctrl.Result{}, nil
@@ -97,7 +94,7 @@ func (r *MetalClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 
 func (r *MetalClusterReconciler) reconcileDelete(metalCluster *infrav1.MetalCluster) (ctrl.Result, error) {
 	// Cluster is deleted so remove the finalizer.
-	metalCluster.Finalizers = util.Filter(metalCluster.Finalizers, infrav1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(metalCluster, infrav1.ClusterFinalizer)
 
 	return ctrl.Result{}, nil
 }

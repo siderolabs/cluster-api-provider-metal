@@ -4,13 +4,14 @@ go 1.13
 
 require (
 	github.com/go-logr/logr v0.1.0
-	github.com/onsi/ginkgo v1.8.0
-	github.com/onsi/gomega v1.5.0
+	github.com/onsi/ginkgo v1.12.0
+	github.com/onsi/gomega v1.9.0
 	github.com/vmware/goipmi v0.0.0-20181114221114-2333cd82d702
-	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
-	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
-	k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
-	k8s.io/utils v0.0.0-20190809000727-6c36bc71fc4a
-	sigs.k8s.io/cluster-api v0.2.9
-	sigs.k8s.io/controller-runtime v0.3.0
+	k8s.io/api v0.17.2
+	k8s.io/apimachinery v0.17.2
+	k8s.io/client-go v0.17.2
+	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
+	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66
+	sigs.k8s.io/cluster-api v0.3.3
+	sigs.k8s.io/controller-runtime v0.5.2
 )

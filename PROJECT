@@ -10,4 +10,13 @@ resources:
 - group: infrastructure
   kind: MetalMachineTemplate
   version: v1alpha2
+- group: infrastructure
+  kind: MetalMachine
+  version: v1alpha3
+- group: infrastructure
+  kind: MetalMachineTemplate
+  version: v1alpha3
+- group: infrastructure
+  kind: MetalCluster
+  version: v1alpha3
 version: "2"

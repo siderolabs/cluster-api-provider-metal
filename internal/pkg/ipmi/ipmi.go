@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha2"
+	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	goipmi "github.com/vmware/goipmi"
 )
 
