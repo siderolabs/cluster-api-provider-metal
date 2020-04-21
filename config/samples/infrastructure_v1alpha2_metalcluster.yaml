@@ -1,7 +1,0 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
-kind: MetalCluster
-metadata:
-  name: metalcluster-sample
-spec:
-  # Add fields here
-  foo: bar

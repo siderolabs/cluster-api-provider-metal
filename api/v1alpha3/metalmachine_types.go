@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package v1alpha2
+package v1alpha3
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -38,8 +38,7 @@ type MetalMachineSpec struct {
 type MetalMachineStatus struct {
 	Ready bool `json:"ready"`
 
-
-	// ErrorReason will be set in the event that there is a terminal problem
+	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
 	// for machine interpretation.
 	//
@@ -56,9 +55,9 @@ type MetalMachineStatus struct {
 	// can be added as events to the Machine object and/or logged in the
 	// controller's output.
 	// +optional
-	ErrorReason *errors.MachineStatusError `json:"errorReason,omitempty"`
+	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
 
-	// ErrorMessage will be set in the event that there is a terminal problem
+	// FailureMessage will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a more verbose string suitable
 	// for logging and human consumption.
 	//
@@ -75,11 +74,16 @@ type MetalMachineStatus struct {
 	// can be added as events to the Machine object and/or logged in the
 	// controller's output.
 	// +optional
-	ErrorMessage *string `json:"errorMessage,omitempty"`
+	FailureMessage *string `json:"failureMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=metalmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="MetalMachine ready status"
+// +kubebuilder:printcolumn:name="Cluster",type="string",priority=1,JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this MetalMachine belongs"
+// +kubebuilder:printcolumn:name="Machine",type="string",priority=1,JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object to which this MetalMachine belongs"
+// +kubebuilder:printcolumn:name="Server",type="string",priority=1,JSONPath=".spec.serverRef.name",description="Server ID"
+// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
 // MetalMachine is the Schema for the metalmachines API
