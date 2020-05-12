@@ -20,9 +20,9 @@ import (
 	"os"
 
 	infrav1alpha2 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha2"
-	infrastructurev1alpha3 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	infrav1alpha3 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	"github.com/talos-systems/cluster-api-provider-metal/controllers"
+	metalv1alpha1 "github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	cgrecord "k8s.io/client-go/tools/record"
@@ -43,7 +43,7 @@ func init() {
 	_ = capiv1.AddToScheme(scheme)
 	_ = infrav1alpha2.AddToScheme(scheme)
 	_ = infrav1alpha3.AddToScheme(scheme)
-	_ = infrastructurev1alpha3.AddToScheme(scheme)
+	_ = metalv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -99,15 +99,15 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		if err = (&infrastructurev1alpha3.MetalCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.MetalCluster{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "MetalCluster")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.MetalMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.MetalMachine{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "MetalMachine")
 			os.Exit(1)
 		}
-		if err = (&infrastructurev1alpha3.MetalMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&infrav1alpha3.MetalMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "MetalMachineTemplate")
 			os.Exit(1)
 		}

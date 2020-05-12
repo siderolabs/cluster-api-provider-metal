@@ -15,23 +15,14 @@ const (
 	MachineFinalizer = "metalmachine.infrastructure.cluster.x-k8s.io"
 )
 
-// TODO(rsmitty): These should probably come from a secret
-
-// BMC defines data about how to talk to the node via ipmitool
-type BMC struct {
-	Endpoint string `json:"endpoint"`
-	User     string `json:"user"`
-	Pass     string `json:"pass"`
-}
-
 // MetalMachineSpec defines the desired state of MetalMachine
 type MetalMachineSpec struct {
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 
-	BMC       BMC                     `json:"bmc,omitempty"`
-	ServerRef *corev1.ObjectReference `json:"serverRef,omitempty"`
+	ServerRef      *corev1.ObjectReference `json:"serverRef,omitempty"`
+	ServerClassRef *corev1.ObjectReference `json:"serverClassRef,omitempty"`
 }
 
 // MetalMachineStatus defines the observed state of MetalMachine

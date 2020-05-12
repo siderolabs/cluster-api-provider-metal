@@ -13,11 +13,7 @@ import (
 
 // MetalMachineTemplateSpec defines the desired state of MetalMachineTemplate
 type MetalMachineTemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of MetalMachineTemplate. Edit MetalMachineTemplate_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Template MetalMachineTemplateResource `json:"template"`
 }
 
 // MetalMachineTemplateStatus defines the observed state of MetalMachineTemplate
@@ -50,4 +46,9 @@ type MetalMachineTemplateList struct {
 
 func init() {
 	SchemeBuilder.Register(&MetalMachineTemplate{}, &MetalMachineTemplateList{})
+}
+
+type MetalMachineTemplateResource struct {
+	// Spec is the specification of the desired behavior of the machine.
+	Spec MetalMachineSpec `json:"spec"`
 }

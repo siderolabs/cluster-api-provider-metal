@@ -64,3 +64,35 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - metal.arges.dev
+  resources:
+  - serverclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.arges.dev
+  resources:
+  - serverclasses/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.arges.dev
+  resources:
+  - servers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metal.arges.dev
+  resources:
+  - servers/status
+  verbs:
+  - get
+  - patch
+  - update
