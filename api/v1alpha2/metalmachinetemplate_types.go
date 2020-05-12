@@ -8,16 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // MetalMachineTemplateSpec defines the desired state of MetalMachineTemplate
 type MetalMachineTemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of MetalMachineTemplate. Edit MetalMachineTemplate_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Template MetalMachineTemplateResource `json:"template"`
 }
 
 // MetalMachineTemplateStatus defines the observed state of MetalMachineTemplate
@@ -49,4 +42,9 @@ type MetalMachineTemplateList struct {
 
 func init() {
 	SchemeBuilder.Register(&MetalMachineTemplate{}, &MetalMachineTemplateList{})
+}
+
+type MetalMachineTemplateResource struct {
+	// Spec is the specification of the desired behavior of the machine.
+	Spec MetalMachineSpec `json:"spec"`
 }

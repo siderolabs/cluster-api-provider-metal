@@ -11,8 +11,12 @@ import (
 	"github.com/go-logr/logr"
 	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
 	"github.com/talos-systems/cluster-api-provider-metal/internal/pkg/ipmi"
+	metalv1alpha1 "github.com/talos-systems/metal-controller-manager/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api/util"
@@ -34,6 +38,10 @@ type MetalMachineReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metalmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metalmachines/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups=metal.arges.dev,resources=serverclasses,verbs=get;list;watch;
+// +kubebuilder:rbac:groups=metal.arges.dev,resources=serverclasses/status,verbs=get;list;watch;
+// +kubebuilder:rbac:groups=metal.arges.dev,resources=servers,verbs=get;list;watch;
+// +kubebuilder:rbac:groups=metal.arges.dev,resources=servers/status,verbs=get;update;patch
 
 func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rerr error) {
 	ctx := context.Background()
@@ -79,7 +87,7 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	// Always attempt to Patch the argesCluster object and status after each reconciliation.
+	// Always attempt to Patch the argesMachine object and status after each reconciliation.
 	defer func() {
 		if err := patchHelper.Patch(ctx, metalMachine); err != nil {
 			logger.Error(err, "failed to patch metalMachine")
@@ -94,47 +102,109 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 	// Handle deleted machines
 	if !metalMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("deleting machine")
-		return r.reconcileDelete(metalMachine)
+		return r.reconcileDelete(ctx, metalMachine)
 	}
 
-	ipmiClient, err := ipmi.NewClient(metalMachine.Spec.BMC)
-	if err != nil {
-		return ctrl.Result{}, err
+	serverResource := &metalv1alpha1.Server{}
+
+	// Use server ref if already provided
+	if metalMachine.Spec.ServerRef != nil {
+		namespacedName := types.NamespacedName{
+			Namespace: metalMachine.Spec.ServerRef.Namespace,
+			Name:      metalMachine.Spec.ServerRef.Name,
+		}
+
+		r.Get(ctx, namespacedName, serverResource)
+	} else {
+		if metalMachine.Spec.ServerClassRef == nil {
+			return ctrl.Result{}, fmt.Errorf("either a server or serverclass ref must be supplied")
+		}
+
+		serverResource, err = r.fetchServerFromClass(ctx, metalMachine.Spec.ServerClassRef)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		metalMachine.Spec.ServerRef = &v1.ObjectReference{
+			Kind: serverResource.Kind,
+			Name: serverResource.Name,
+		}
 	}
 
-	err = ipmiClient.SetPXE()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	if serverResource.Spec.BMC != nil {
+		ipmiClient, err := ipmi.NewClient(*serverResource.Spec.BMC)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 
-	err = ipmiClient.PowerOn()
-	if err != nil {
-		return ctrl.Result{}, err
+		err = ipmiClient.SetPXE()
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = ipmiClient.PowerOn()
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Set the providerID, as its required in upstream capi for machine lifecycle
-	metalMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("metal://%s", metalMachine.Spec.ServerRef.Name))
+	metalMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("metal://%s", serverResource.Name))
 
 	metalMachine.Status.Ready = true
 	return ctrl.Result{}, nil
 }
 
-func (r *MetalMachineReconciler) reconcileDelete(metalMachine *infrav1.MetalMachine) (ctrl.Result, error) {
+func (r *MetalMachineReconciler) reconcileDelete(ctx context.Context, metalMachine *infrav1.MetalMachine) (ctrl.Result, error) {
 	//TODO(rsmitty): add in call to reset node via talos api
 
-	ipmiClient, err := ipmi.NewClient(metalMachine.Spec.BMC)
-	if err != nil {
-		return ctrl.Result{}, err
+	serverResource := &metalv1alpha1.Server{}
+
+	// Use server ref if already provided
+	if metalMachine.Spec.ServerRef != nil {
+		namespacedName := types.NamespacedName{
+			Namespace: metalMachine.Spec.ServerRef.Namespace,
+			Name:      metalMachine.Spec.ServerRef.Name,
+		}
+
+		r.Get(ctx, namespacedName, serverResource)
 	}
 
-	err = ipmiClient.SetPXE()
-	if err != nil {
-		return ctrl.Result{}, err
+	if serverResource.Spec.BMC != nil {
+		ipmiClient, err := ipmi.NewClient(*serverResource.Spec.BMC)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = ipmiClient.SetPXE()
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = ipmiClient.PowerOff()
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
-	err = ipmiClient.PowerOff()
-	if err != nil {
-		return ctrl.Result{}, err
+	// Remove in-use bool from server object
+	if metalMachine.Spec.ServerRef != nil {
+		serverObj := &metalv1alpha1.Server{}
+
+		namespacedName := types.NamespacedName{
+			Namespace: "",
+			Name:      metalMachine.Spec.ServerRef.Name,
+		}
+
+		if err := r.Get(ctx, namespacedName, serverObj); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		serverObj.Status.InUse = false
+
+		if err := r.Status().Update(ctx, serverObj); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Cluster is deleted so remove the finalizer.
@@ -148,4 +218,44 @@ func (r *MetalMachineReconciler) SetupWithManager(mgr ctrl.Manager, options cont
 		WithOptions(options).
 		For(&infrav1.MetalMachine{}).
 		Complete(r)
+}
+
+func (r *MetalMachineReconciler) fetchServerFromClass(ctx context.Context, classRef *corev1.ObjectReference) (*metalv1alpha1.Server, error) {
+	// Grab server class and validate that we have nodes available
+	serverClassResource := &metalv1alpha1.ServerClass{}
+
+	namespacedName := types.NamespacedName{
+		Namespace: classRef.Namespace,
+		Name:      classRef.Name,
+	}
+
+	if err := r.Get(ctx, namespacedName, serverClassResource); err != nil {
+		return nil, err
+	}
+
+	if len(serverClassResource.Status.ServersAvailable) == 0 {
+		return nil, fmt.Errorf("no servers available in serverclass")
+	}
+
+	// Fetch first server in avail list
+	firstAvailServer := serverClassResource.Status.ServersAvailable[0]
+	serverObj := &metalv1alpha1.Server{}
+
+	namespacedName = types.NamespacedName{
+		Namespace: "",
+		Name:      firstAvailServer,
+	}
+
+	if err := r.Get(ctx, namespacedName, serverObj); err != nil {
+		return nil, err
+	}
+
+	// Update server status to in use
+	serverObj.Status.InUse = true
+
+	if err := r.Status().Update(ctx, serverObj); err != nil {
+		return nil, err
+	}
+
+	return serverObj, nil
 }

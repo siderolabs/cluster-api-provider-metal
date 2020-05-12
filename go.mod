@@ -6,6 +6,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
+	github.com/talos-systems/metal-controller-manager v0.0.0-20200512194441-52d038414dd1
 	github.com/vmware/goipmi v0.0.0-20181114221114-2333cd82d702
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2

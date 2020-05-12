@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	infrav1 "github.com/talos-systems/cluster-api-provider-metal/api/v1alpha3"
+	metalv1alpha1 "github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	goipmi "github.com/vmware/goipmi"
 )
 
@@ -14,7 +14,7 @@ type Client struct {
 }
 
 // NewClient creates an ipmi client to use
-func NewClient(bmcInfo infrav1.BMC) (*Client, error) {
+func NewClient(bmcInfo metalv1alpha1.BMC) (*Client, error) {
 	conn := &goipmi.Connection{
 		Hostname:  bmcInfo.Endpoint,
 		Username:  bmcInfo.User,
