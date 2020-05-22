@@ -15,10 +15,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
+	capiv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -151,6 +155,11 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 	// Set the providerID, as its required in upstream capi for machine lifecycle
 	metalMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("metal://%s", serverResource.Name))
 
+	err = r.patchProviderID(ctx, cluster, metalMachine)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	metalMachine.Status.Ready = true
 	return ctrl.Result{}, nil
 }
@@ -258,4 +267,67 @@ func (r *MetalMachineReconciler) fetchServerFromClass(ctx context.Context, class
 	}
 
 	return serverObj, nil
+}
+
+func (r *MetalMachineReconciler) patchProviderID(ctx context.Context, cluster *capiv1.Cluster, metalMachine *infrav1.MetalMachine) error {
+	kubeconfigSecret := &v1.Secret{}
+	err := r.Client.Get(ctx,
+		types.NamespacedName{
+			Namespace: cluster.Namespace,
+			Name:      cluster.Name + "-kubeconfig",
+		},
+		kubeconfigSecret,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigSecret.Data["value"])
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	nodes, err = clientset.CoreV1().Nodes().List(
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("metal.arges.dev/uuid=%s", metalMachine.Spec.ServerRef.Name),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(nodes.Items) == 0 {
+		return fmt.Errorf("no matching nodes found")
+	}
+
+	if len(nodes.Items) > 1 {
+		return fmt.Errorf("multiple nodes found with same uuid label")
+	}
+
+	providerID := fmt.Sprintf("metal://%s", metalMachine.Spec.ServerRef.Name)
+
+	for _, node := range nodes.Items {
+		if node.Spec.ProviderID == providerID {
+			continue
+		}
+
+		node.Spec.ProviderID = providerID
+		_, err = clientset.CoreV1().Nodes().Update(&node)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
