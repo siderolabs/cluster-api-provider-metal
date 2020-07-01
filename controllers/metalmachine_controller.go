@@ -141,14 +141,23 @@ func (r *MetalMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rer
 			return ctrl.Result{}, err
 		}
 
-		err = ipmiClient.SetPXE()
+		chassisStatus, err := ipmiClient.Status()
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 
-		err = ipmiClient.PowerOn()
-		if err != nil {
-			return ctrl.Result{}, err
+		// Only take action if server is turned off
+		// otherwise IPMI library gets angry
+		if !chassisStatus.IsSystemPowerOn() {
+			err = ipmiClient.SetPXE()
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			err = ipmiClient.PowerOn()
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
 
